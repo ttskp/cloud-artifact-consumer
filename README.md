@@ -1,7 +1,7 @@
 # SAM project template
 
-This is a [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) project template.
-You can keep most of the descriptions provided in this Readme, as they will fit in general.
+This is a [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) project 
+providing a stack which subscribes do a artifact distribution stack.
 
 ## Requirements
 

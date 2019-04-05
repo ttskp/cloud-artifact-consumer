@@ -1,0 +1,22 @@
+project:
+	key: TCL
+	name: tts Cloud
+
+plan:
+	key: BUILDARTIFACTCONSUMER
+	name: Build Artifact Consumer
+	description: Provides a stack for the consumer side of the artifact distribution.
+
+# Repository
+repository:
+	project:
+		key: TC
+	name: build-artifact-consumer
+	url=: ssh://git@git.ttsdev.de:7999/TC/build-artifact-consumer.git
+
+# AWS configuration
+aws:
+	region: eu-central-1
+	templatesBucket: dev-eu-central-1
+	unitTest:
+		region: eu-west-1
