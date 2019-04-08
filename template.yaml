@@ -4,11 +4,51 @@ Transform: AWS::Serverless-2016-10-31
 Description: Consumer side of CFN Artifact Distribution.
 
 Globals:
-    Function:
-        Timeout: 3
+  Function:
+    Timeout: 3
 
 Parameters:
 
+  DistributionTopic:
+    Type: String
+
+  DistributionRegion:
+    Type: String
+    Default: "eu-west-1"
+
+
 Resources:
 
-Outputs:
+  Queue:
+    Type: AWS::SQS::Queue
+
+  QueueSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+          TopicArn: !Ref DistributionTopic
+          Protocol: sqs
+          Endpoint: !GetAtt Queue.Arn
+          Region: !Ref DistributionRegion
+          RawMessageDelivery: true
+          FilterPolicy:
+              account: ["ALL", !Sub "${AWS::AccountId}"]
+              region: ["ALL", !Sub "${AWS::Region}"]
+
+
+  ConsumerQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref Queue
+      PolicyDocument:
+        Id: "DistributorTopicPolicy"
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal: "*"
+            Action: "sqs:SendMessage"
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": !Ref DistributionTopic
+
