@@ -28,20 +28,79 @@ Parameters:
 
 Resources:
 
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}"
+
+  CopyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: copy_files
+      Role: !GetAtt CopyRole.Arn
+      Handler: function.handler
+      Runtime: python3.6
+      Environment:
+        Variables:
+          ARTIFACTS_BUCKET: !GetAtt ArtifactsBucket.Arn
+
+  CopyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: allowLambdaLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+        - PolicyName: allowSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt Queue.Arn
+
+  QueueToCopyFunction:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      Enabled: true
+      EventSourceArn: !GetAtt Queue.Arn
+      FunctionName: !Ref CopyFunction
+
   Queue:
     Type: AWS::SQS::Queue
 
   QueueSubscription:
-      Type: AWS::SNS::Subscription
-      Properties:
-          TopicArn: !Ref DistributionTopic
-          Protocol: sqs
-          Endpoint: !GetAtt Queue.Arn
-          Region: !Ref DistributionRegion
-          RawMessageDelivery: true
-          FilterPolicy:
-              account: ["ALL", !Sub "${AWS::AccountId}"]
-              region: ["ALL", !Sub "${AWS::Region}"]
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref DistributionTopic
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      Region: !Ref DistributionRegion
+      RawMessageDelivery: true
+      FilterPolicy:
+        account: ["ALL", !Sub "${AWS::AccountId}"]
+        region: ["ALL", !Sub "${AWS::Region}"]
 
   ConsumerQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -60,11 +119,11 @@ Resources:
               ArnEquals:
                 "aws:SourceArn": !Ref DistributionTopic
 
-#  InitialSetTrigger:
-#    Type: Custom::InitialSetTrigger
-#    Properties:
-#      ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
-#    DependsOn: Queue
+  #  InitialSetTrigger:
+  #    Type: Custom::InitialSetTrigger
+  #    Properties:
+  #      ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
+  #    DependsOn: Queue
 
   InitialSetTriggerFunction:
     Type: AWS::Serverless::Function
