@@ -11,10 +11,19 @@ Parameters:
 
   DistributionTopic:
     Type: String
+    Default: "arn:aws:sns:eu-west-1:529985782713:build-artifact-distributor-DistributionTopic-1A5L07HYRFVRA"
 
   DistributionRegion:
     Type: String
     Default: "eu-west-1"
+
+  InitialDistributionRole:
+    Type: String
+    Default: "arn:aws:iam::529985782713:role/TriggerInitSetRole"
+
+  InitialDistributionSetMachine:
+    Type: String
+    Default: "arn:aws:states:eu-west-1:529985782713:stateMachine:InitSetRetrieverMachine-i1BYUlZbD1Si"
 
 
 Resources:
@@ -34,7 +43,6 @@ Resources:
               account: ["ALL", !Sub "${AWS::AccountId}"]
               region: ["ALL", !Sub "${AWS::Region}"]
 
-
   ConsumerQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
@@ -52,3 +60,46 @@ Resources:
               ArnEquals:
                 "aws:SourceArn": !Ref DistributionTopic
 
+#  InitialSetTrigger:
+#    Type: Custom::InitialSetTrigger
+#    Properties:
+#      ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
+#    DependsOn: Queue
+
+  InitialSetTriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: init_set_trigger
+      Handler: function.handler
+      Role: !GetAtt InitialSetTriggerRole.Arn
+      Runtime: python3.6
+      Environment:
+        Variables:
+          INITIAL_DISTRIBUTION_MACHINE: !Ref InitialDistributionSetMachine
+          INITIAL_DISTRIBUTION_ROLE: !Ref InitialDistributionRole
+          INITIAL_DISTRIBUTION_REGION: !Ref DistributionRegion
+          CONSUMER_ACCOUNT_ID: !Sub "${AWS::AccountId}"
+          CONSUMER_REGION: !Sub "${AWS::Region}"
+
+
+  InitialSetTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Invoke-Init-Set-Distribution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Action: sts:AssumeRole
+              Resource: arn:aws:iam::529985782713:role/TriggerInitSetRole
