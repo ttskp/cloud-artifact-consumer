@@ -13,6 +13,8 @@ moto = "*"
 tests = "python -m pytest --disable-pytest-warnings"
 
 [packages]
+cfnresponse = "*"
+boto3 = "*"
 
 [requires]
 python_version = "3.6"
