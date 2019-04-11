@@ -15,7 +15,6 @@ def handler(event, context):
     try:
         cross_account_role = os.environ["INITIAL_DISTRIBUTION_ROLE"]
         distribution_account_credentials = get_cross_account_credentials(cross_account_role)
-        print(distribution_account_credentials)
         step_functions = distribution_account_sfn_client(distribution_account_credentials)
 
         init_set_machine_arn = os.environ["INITIAL_DISTRIBUTION_MACHINE"]
@@ -46,10 +45,10 @@ def distribution_account_sfn_client(distribution_account_credentials):
     aws_secret_access_key = distribution_account_credentials["SecretAccessKey"]
     aws_session_token = distribution_account_credentials["SessionToken"]
 
-    initial_set_region = os.environ["INITIAL_DISTRIBUTION_REGION"]
+    distributor_region = os.environ["INITIAL_DISTRIBUTION_REGION"]
 
     return boto3.client("stepfunctions",
-                        region_name=initial_set_region,
+                        region_name=distributor_region,
                         aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=aws_secret_access_key,
                         aws_session_token=aws_session_token)

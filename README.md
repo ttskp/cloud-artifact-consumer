@@ -30,7 +30,6 @@ To create the environment in the project directory, create a *.venv* directory b
 
 In IntelliJ, set the Project SDK home path to `.venv/Scripts/python.exe`, to use the created environment.
 
-
 ### Building the project
 
 To build the project, simply run
@@ -63,9 +62,34 @@ S3 bucket the `packaged.yaml` should be deployed to.\
 **Note**: It may take some time until the available stacks are loaded
 (Make sure you have selected the correct region in the bottom left corner of the IDE).
 
+## General Architecture
+
+The major part of a build-artifact-consumer stack consists of a queue, a lambda and a S3 bucket.
+The queue is given a subscription to the build-artifact-distributor topic, which sends
+a message each time a new build artifact is available.
+Furthermore, the subscription contains a filter for the *account* and *region* the stack resides in,
+such that the queue only receives messages which are sent to its explicit stack, or 
+to all subscribed consumers.
+ 
+The *copy_files*-Lambda then processes the message, extracting the presigned url the the
+distributed object, and copies the file to the target path in the artifact bucket on consumer side.
+
+The second part contains a custom resource and an associated Lambda.
+These resources are used to trigger the stepfunctions on distributor side which 
+distribute the initial set of build artifacts to any new consumer.
+For this, the Lambda assumes a cross-account role defined in the distributor stack.
+
+To allow the consumer stack to establish the subscription between the queue and the distributor topic
+as well as the Lambda to assume the cross-account role, the account in which the 
+consumer stack is set up must be enlisted as a *trusted account* on the distributor side.
+
+![Architecture Overview](doc/architecture_overview.png "Architecture Overview")
+
 ## Usage
 
+**TODO**
 
+* Configuration of paramters
 
 ## Testing
 
