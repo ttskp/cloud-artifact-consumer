@@ -81,11 +81,11 @@ Resources:
                   - sqs:ChangeMessageVisibility
                 Resource: !GetAtt Queue.Arn
 
-  QueueToCopyFunction:
+  QueueToCopyFunctionMapping:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       # TODO: Should this be larger? Can be up to 10 messages for each invoked Lambda, which would reduce the number of Lambdas.
-      BatchSize: 1
+      BatchSize: 10
       Enabled: true
       EventSourceArn: !GetAtt Queue.Arn
       FunctionName: !Ref CopyFunction
