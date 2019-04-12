@@ -43,7 +43,7 @@ Resources:
       Runtime: python3.6
       Environment:
         Variables:
-          ARTIFACTS_BUCKET: !GetAtt ArtifactsBucket.Arn
+          ARTIFACTS_BUCKET: !Ref ArtifactsBucket
 
   CopyRole:
     Type: AWS::IAM::Role
@@ -80,6 +80,14 @@ Resources:
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
                 Resource: !GetAtt Queue.Arn
+        - PolicyName: allowPutObject
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !GetAtt ArtifactsBucket.Arn
 
   QueueToCopyFunctionMapping:
     Type: AWS::Lambda::EventSourceMapping
