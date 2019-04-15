@@ -9,9 +9,11 @@ def handler(event, context):
     print(event)
 
     for record in event["Records"]:
-        presigned_url = json.loads(record["body"])["ArtifactUrl"]
+        print(record["body"])
+        body = json.loads(record["body"])
+        presigned_url = body["ArtifactUrl"]
 
-        file_name = json.loads(record["body"])["Key"]
+        file_name = body["ArtifactKey"]
         file_data = download_file_data(presigned_url)
 
         upload_file_to_bucket(file_data, file_name)

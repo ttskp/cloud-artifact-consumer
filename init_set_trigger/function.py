@@ -31,7 +31,7 @@ def handler(event, context):
 
         print(response)
 
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, {"StepFunctionExecution": response})
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, {"StepFunctionExecution": str(response)})
     except Exception as e:
         print(traceback.format_exc())
         cfnresponse.send(

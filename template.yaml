@@ -92,8 +92,6 @@ Resources:
   QueueToCopyFunctionMapping:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
-      # TODO: Should this be larger? Can be up to 10 messages for each invoked Lambda, which would reduce the number of Lambdas.
-      BatchSize: 1
       Enabled: true
       EventSourceArn: !GetAtt Queue.Arn
       FunctionName: !Ref CopyFunction
@@ -130,12 +128,12 @@ Resources:
               ArnEquals:
                 "aws:SourceArn": !Ref DistributionTopic
 
-  ## Commented out to during development
-  #  InitialSetTrigger:
-  #    Type: Custom::InitialSetTrigger
-  #    Properties:
-  #      ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
-  #    DependsOn: Queue
+  # Commented out to during development
+  InitialSetTrigger:
+    Type: Custom::InitialSetTrigger
+    Properties:
+      ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
+    DependsOn: Queue
 
   InitialSetTriggerFunction:
     Type: AWS::Serverless::Function
