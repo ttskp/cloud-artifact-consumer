@@ -26,6 +26,8 @@ Parameters:
     Type: String
     Default: "arn:aws:states:eu-west-1:529985782713:stateMachine:InitSetRetrieverMachine-i1BYUlZbD1Si"
 
+  Version:
+    Type: String
 
 Resources:
 
@@ -98,6 +100,7 @@ Resources:
 
   Queue:
     Type: AWS::SQS::Queue
+    DependsOn: ArtifactsBucket
 
   QueueSubscription:
     Type: AWS::SNS::Subscription
@@ -133,6 +136,7 @@ Resources:
     Type: Custom::InitialSetTrigger
     Properties:
       ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
+      Version: !Ref Version
     DependsOn: Queue
 
   InitialSetTriggerFunction:

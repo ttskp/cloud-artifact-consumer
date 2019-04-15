@@ -34,7 +34,7 @@ def event_builder():
         for i in range(message_count):
             records.append({
                 "body": json.dumps({
-                    "Key": TEST_OBJECT_KEY.format(i),
+                    "ArtifactKey": TEST_OBJECT_KEY.format(i),
                     "ArtifactUrl": TEST_SIGNED_URL.format(i)
                 })
             })
