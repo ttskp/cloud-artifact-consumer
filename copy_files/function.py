@@ -20,7 +20,7 @@ def handler(event, context):
     # Do the actual upload to s3
     artifacts_bucket_name = os.environ["ARTIFACTS_BUCKET"]
     s3_filename = "template.yaml"   # test param
-    s3.put_object(Bucket=artifacts_bucket_name, Key=s3_filename, Body= req_data)
+    s3.put_object(Bucket=artifacts_bucket_name, Key=s3_filename, Body=req_data)
 
 
 # TODO: Iterate queue messages in event and foreach:

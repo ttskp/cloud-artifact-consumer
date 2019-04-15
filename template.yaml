@@ -87,7 +87,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !GetAtt ArtifactsBucket.Arn
+                Resource: !Sub "${ArtifactsBucket.Arn}/*"
 
   QueueToCopyFunctionMapping:
     Type: AWS::Lambda::EventSourceMapping
