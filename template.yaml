@@ -18,6 +18,10 @@ Parameters:
     Type: String
     Default: "eu-west-1"
 
+  DistributionBucket:
+    Type: String
+    Default: tts-cloud-artifacts-529985782713-eu-west-1
+
   InitialDistributionRole:
     Type: String
     Default: "arn:aws:iam::529985782713:role/TriggerInitSetRole"
@@ -46,6 +50,7 @@ Resources:
       Environment:
         Variables:
           ARTIFACTS_BUCKET: !Ref ArtifactsBucket
+          DISTRIBUTOR_BUCKET: !Ref DistributionBucket
 
   CopyRole:
     Type: AWS::IAM::Role
