@@ -3,10 +3,6 @@ Transform: AWS::Serverless-2016-10-31
 
 Description: Consumer side of CFN Artifact Distribution.
 
-Globals:
-  Function:
-    Timeout: 3
-
 Parameters:
 
   # TODO: Should the distributor stack export these values? Then only the distributor stack has to be set as a parameter.
@@ -44,6 +40,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: copy_files
+      Timeout: 30
+      MemorySize: 512
       Role: !GetAtt CopyRole.Arn
       Handler: function.handler
       Runtime: python3.6
@@ -149,6 +147,7 @@ Resources:
     Properties:
       CodeUri: init_set_trigger
       Handler: function.handler
+      Timeout: 3
       Role: !GetAtt InitialSetTriggerRole.Arn
       Runtime: python3.6
       Environment:

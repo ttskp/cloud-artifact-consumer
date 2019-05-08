@@ -8,10 +8,10 @@ from moto import mock_s3
 
 from copy_files import function
 
+ERROR_ARTIFACT_URL = "http://error-artifacturl"
+
 TEST_CONSUMER_BUCKET_NAME = "test-bucket"
-
 TEST_OBJECT_KEY = "item{}"
-
 TEST_SIGNED_URL = "http://artifacturl{}/"
 
 TEST_TEMPLATE = """AWSTemplateFormatVersion: '2010-09-09'
@@ -108,6 +108,7 @@ Resources:
       Runtime: python3.6
     Type: AWS::Serverless::Function"""
 
+
 @mock_s3
 @responses.activate
 def test_copy_files_to_s3(mocker, event_builder):
@@ -134,6 +135,32 @@ def test_transform_template_before_upload(mocker, template_object_event):
     assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
     assert_template_has_content("packaged.yml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
     assert_template_has_content("packaged.json", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+
+
+@mock_s3
+def test_access_denied_error(mocker, error_event):
+
+    given_bucket(mocker)
+    given_bucket(mocker, env_variable="DISTRIBUTOR_BUCKET", bucket_name="dist-bucket")
+    given_error_response_for_url(ERROR_ARTIFACT_URL)
+
+    function.handler(error_event, None)
+
+    # assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+
+
+@pytest.fixture
+def error_event():
+    return {
+        "Records": [
+            {
+                "body": json.dumps({
+                    "ArtifactKey": "packaged.yaml",
+                    "ArtifactUrl": ERROR_ARTIFACT_URL
+                })
+            }
+        ]
+    }
 
 
 @pytest.fixture
@@ -200,6 +227,16 @@ def given_signed_url_responses_for_templates(message_count):
         )
 
 
+def given_error_response_for_url(url):
+    responses.add(
+        method="GET",
+        url=url,
+        body="Error: Access Denied.",
+        status=404
+    )
+
+
+
 def given_bucket(mocker, env_variable="ARTIFACTS_BUCKET", bucket_name=TEST_CONSUMER_BUCKET_NAME):
     mocker.patch.dict(os.environ, {env_variable: bucket_name})
 
@@ -220,8 +257,6 @@ def assert_files_in_bucket(object_count):
 
     for i in range(object_count):
         assert TEST_OBJECT_KEY.format(i) in keys_in_bucket
-
-
 
 
 def assert_template_has_content(object_key, expected_template, bucket_name):
