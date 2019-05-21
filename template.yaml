@@ -5,7 +5,6 @@ Description: Consumer side of CFN Artifact Distribution.
 
 Parameters:
 
-  # TODO: Should the distributor stack export these values? Then only the distributor stack has to be set as a parameter.
   DistributionTopic:
     Type: String
     Default: "arn:aws:sns:eu-west-1:529985782713:build-artifact-distributor-DistributionTopic-1A5L07HYRFVRA"
