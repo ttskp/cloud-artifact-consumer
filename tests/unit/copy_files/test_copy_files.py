@@ -236,7 +236,6 @@ def given_error_response_for_url(url):
     )
 
 
-
 def given_bucket(mocker, env_variable="ARTIFACTS_BUCKET", bucket_name=TEST_CONSUMER_BUCKET_NAME):
     mocker.patch.dict(os.environ, {env_variable: bucket_name})
 

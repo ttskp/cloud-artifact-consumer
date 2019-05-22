@@ -39,7 +39,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: copy_files
-      Timeout: 30
+      Timeout: 300
       MemorySize: 512
       Role: !GetAtt CopyRole.Arn
       Handler: function.handler
@@ -103,6 +103,8 @@ Resources:
   Queue:
     Type: AWS::SQS::Queue
     DependsOn: ArtifactsBucket
+    Properties:
+      VisibilityTimeout: 300
 
   QueueSubscription:
     Type: AWS::SNS::Subscription
@@ -157,7 +159,6 @@ Resources:
           CONSUMER_ACCOUNT_ID: !Sub "${AWS::AccountId}"
           CONSUMER_REGION: !Sub "${AWS::Region}"
 
-
   InitialSetTriggerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -179,3 +180,4 @@ Resources:
               Effect: Allow
               Action: sts:AssumeRole
               Resource: arn:aws:iam::529985782713:role/TriggerInitSetRole
+
