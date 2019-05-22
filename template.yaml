@@ -7,26 +7,32 @@ Parameters:
 
   DistributionTopic:
     Type: String
+    Description: The distributor topic announcing new files to copy.
     Default: "arn:aws:sns:eu-west-1:529985782713:build-artifact-distributor-DistributionTopic-1A5L07HYRFVRA"
 
   DistributionRegion:
     Type: String
+    Description: The region where the distributor is located.
     Default: "eu-west-1"
 
   DistributionBucket:
     Type: String
+    Description: The source bucket of the distribution
     Default: tts-cloud-artifacts-529985782713-eu-west-1
 
   InitialDistributionRole:
     Type: String
+    Description: A role in the distributor account to assume for triggering the initset distribution.
     Default: "arn:aws:iam::529985782713:role/TriggerInitSetRole"
 
   InitialDistributionSetMachine:
     Type: String
+    Description: State machine to trigger for distributing the initset.
     Default: "arn:aws:states:eu-west-1:529985782713:stateMachine:InitSetRetrieverMachine-i1BYUlZbD1Si"
 
   Version:
     Type: String
+    Description: Use a different value during stack update to trigger copying the initial set.
 
 Resources:
 
