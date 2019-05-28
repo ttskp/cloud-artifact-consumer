@@ -45,7 +45,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        Zipfile: !Sub |
+        ZipFile: !Sub |
           import json
           import os
 
@@ -221,7 +221,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        Zipfile: !Sub |
+        ZipFile: !Sub |
           import json
           import os
           import traceback
