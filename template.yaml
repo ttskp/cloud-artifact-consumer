@@ -209,7 +209,6 @@ Resources:
               ArnEquals:
                 "aws:SourceArn": !Ref DistributionTopic
 
-  # Commented out to during development
   InitialSetTrigger:
     Type: Custom::InitialSetTrigger
     Properties:
