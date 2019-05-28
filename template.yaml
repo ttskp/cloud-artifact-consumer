@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
 
 Description: Consumer side of CFN Artifact Distribution.
 
@@ -42,9 +41,78 @@ Resources:
       BucketName: !Sub "tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}"
 
   CopyFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
-      CodeUri: copy_files
+      Code:
+        Zipfile: !Sub |
+          import json
+          import os
+
+          import boto3
+          from botocore.vendored import requests
+
+
+          def handler(event, context):
+              print(event)
+
+              for record in event["Records"]:
+                  print(record["body"])
+                  body = json.loads(record["body"])
+                  presigned_url = body["ArtifactUrl"]
+
+                  file_name = body["ArtifactKey"]
+                  try:
+                      file_data = download_file_data(presigned_url)
+
+                      if is_template(file_name, file_data):
+                          file_data = replace_bucket_name_in_template(file_data)
+
+                      upload_file_to_bucket(file_data, file_name)
+                  except IOError as e:
+                      # TODO: Should this be connected to an alarm or a topic?
+                      print(f"File {file_name} could not be downloaded.")
+                      print(e)
+
+
+          def download_file_data(presigned_url):
+              requested_object_as_stream = requests.get(presigned_url, stream=True)
+              if int(requested_object_as_stream.status_code) >= 400:
+                  raise IOError(f"Status: {requested_object_as_stream.status_code}, "
+                                f"{requested_object_as_stream.content.decode('utf-8')}")
+
+              return requested_object_as_stream.content
+
+
+          def upload_file_to_bucket(file_data, s3_filename):
+              artifacts_bucket_name = os.environ["ARTIFACTS_BUCKET"]
+              s3 = boto3.client('s3')
+              s3.put_object(Bucket=artifacts_bucket_name, Key=s3_filename, Body=file_data)
+
+
+          def replace_bucket_name_in_template(file_data):
+              target_bucket = os.environ["ARTIFACTS_BUCKET"]
+              distributor_bucket = os.environ["DISTRIBUTOR_BUCKET"]
+              return file_data \
+                  .replace(b"s3://%b" % distributor_bucket.encode(),
+                           b"s3://%b" % target_bucket.encode()) \
+                  .replace(b"https://%b" % distributor_bucket.encode(),
+                           b"https://%b" % target_bucket.encode()) \
+                  .replace(b"Default: %b" % distributor_bucket.encode(),
+                           b"Default: %b" % target_bucket.encode())
+
+
+          def is_template(file_name, file_data):
+              return is_yaml_file(file_name) and has_template_header(file_data)
+
+
+          def is_yaml_file(file_name):
+              return file_name.endswith(".yaml") or file_name.endswith(".yml")
+
+
+          def has_template_header(file_data):
+              file_content = file_data.decode("utf-8")
+              return file_content.startswith("AWSTemplateFormatVersion")
+
       Timeout: 300
       MemorySize: 512
       Role: !GetAtt CopyRole.Arn
@@ -70,7 +138,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        # TODO: Is this necessary? CloudWatch Logs did not seem to work without this in us-east-1.
         - PolicyName: allowLambdaLogs
           PolicyDocument:
             Version: '2012-10-17'
@@ -150,9 +217,74 @@ Resources:
     DependsOn: Queue
 
   InitialSetTriggerFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
-      CodeUri: init_set_trigger
+      Code:
+        Zipfile: !Sub |
+          import json
+          import os
+          import traceback
+
+          import boto3
+          import cfnresponse
+
+
+          def handler(event, context):
+              if "RequestType" in event and "Delete" == event["RequestType"]:
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
+
+              print(event)
+              try:
+                  cross_account_role = os.environ["INITIAL_DISTRIBUTION_ROLE"]
+                  distribution_account_credentials = get_cross_account_credentials(cross_account_role)
+                  step_functions = distribution_account_sfn_client(distribution_account_credentials)
+
+                  init_set_machine_arn = os.environ["INITIAL_DISTRIBUTION_MACHINE"]
+                  account_id = os.environ["CONSUMER_ACCOUNT_ID"]
+                  region = os.environ["CONSUMER_REGION"]
+
+                  response = step_functions.start_execution(
+                      stateMachineArn=init_set_machine_arn,
+                      input=json.dumps({
+                          "AccountId": account_id,
+                          "Region": region
+                      })
+                  )
+
+                  print(response)
+
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {"StepFunctionExecution": str(response)})
+              except Exception as e:
+                  print(traceback.format_exc())
+                  cfnresponse.send(
+                      event, context, cfnresponse.FAILED,
+                      {"Message": "An exception of type {0} occurred. Arguments:\n{1!r}".format(type(e).__name__, e.args)}
+                  )
+
+
+          def distribution_account_sfn_client(distribution_account_credentials):
+              aws_access_key_id = distribution_account_credentials["AccessKeyId"]
+              aws_secret_access_key = distribution_account_credentials["SecretAccessKey"]
+              aws_session_token = distribution_account_credentials["SessionToken"]
+
+              distributor_region = os.environ["INITIAL_DISTRIBUTION_REGION"]
+
+              return boto3.client("stepfunctions",
+                                  region_name=distributor_region,
+                                  aws_access_key_id=aws_access_key_id,
+                                  aws_secret_access_key=aws_secret_access_key,
+                                  aws_session_token=aws_session_token)
+
+
+          def get_cross_account_credentials(cross_account_role):
+              sts = boto3.client("sts")
+              sts_response = sts.assume_role(
+                  RoleArn=cross_account_role,
+                  RoleSessionName="AssumeCrossAccountRole",
+                  DurationSeconds=900)
+              return sts_response["Credentials"]
+
       Handler: function.handler
       Timeout: 3
       Role: !GetAtt InitialSetTriggerRole.Arn

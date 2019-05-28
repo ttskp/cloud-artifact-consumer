@@ -4,6 +4,7 @@ import os
 import boto3
 import pytest
 import responses
+from botocore.vendored import requests
 from moto import mock_s3
 
 from copy_files import function
@@ -14,7 +15,7 @@ TEST_CONSUMER_BUCKET_NAME = "test-bucket"
 TEST_OBJECT_KEY = "item{}"
 TEST_SIGNED_URL = "http://artifacturl{}/"
 
-TEST_TEMPLATE = """AWSTemplateFormatVersion: '2010-09-09'
+TEST_TEMPLATE = b"""AWSTemplateFormatVersion: '2010-09-09'
 Description: Test Template.
 Globals:
   Function:
@@ -61,7 +62,7 @@ Resources:
       Runtime: python3.6
     Type: AWS::Serverless::Function"""
 
-TRANSFORMED_TEST_TEMPLATE = """AWSTemplateFormatVersion: '2010-09-09'
+TRANSFORMED_TEST_TEMPLATE = b"""AWSTemplateFormatVersion: '2010-09-09'
 Description: Test Template.
 Globals:
   Function:
@@ -110,43 +111,32 @@ Resources:
 
 
 @mock_s3
-@responses.activate
 def test_copy_files_to_s3(mocker, event_builder):
-    message_count = 10
+    with mocker.patch('botocore.vendored.requests.get'):
+        message_count = 3
 
-    event = event_builder(message_count)
-    given_signed_url_responses(message_count)
-    given_bucket(mocker)
+        event = event_builder(message_count)
+        given_signed_url_responses(mocker, [(b'ABCD', 200), (b'ACDC', 200), (b'', 403)])
+        given_bucket(mocker)
 
-    function.handler(event, None)
+        function.handler(event, None)
 
-    assert_files_in_bucket(message_count)
+        assert_files_in_bucket(2)
 
 
 @mock_s3
 @responses.activate
 def test_transform_template_before_upload(mocker, template_object_event):
-    given_bucket(mocker)
-    given_bucket(mocker, env_variable="DISTRIBUTOR_BUCKET", bucket_name="dist-bucket")
+    with mocker.patch('botocore.vendored.requests.get'):
+        given_bucket(mocker)
+        given_bucket(mocker, env_variable="DISTRIBUTOR_BUCKET", bucket_name="dist-bucket")
 
-    given_signed_url_responses_for_templates(3)
-    function.handler(template_object_event, None)
+        given_signed_url_responses(mocker, [(TEST_TEMPLATE, 200), (TEST_TEMPLATE, 200), (TEST_TEMPLATE, 200)])
+        function.handler(template_object_event, None)
 
-    assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
-    assert_template_has_content("packaged.yml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
-    assert_template_has_content("packaged.json", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
-
-
-@mock_s3
-def test_access_denied_error(mocker, error_event):
-
-    given_bucket(mocker)
-    given_bucket(mocker, env_variable="DISTRIBUTOR_BUCKET", bucket_name="dist-bucket")
-    given_error_response_for_url(ERROR_ARTIFACT_URL)
-
-    function.handler(error_event, None)
-
-    # assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+        assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+        assert_template_has_content("packaged.yml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+        assert_template_has_content("packaged.json", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
 
 
 @pytest.fixture
@@ -207,33 +197,17 @@ def event_builder():
     return builder
 
 
-def given_signed_url_responses(message_count):
-    for i in range(message_count):
-        responses.add(
-            method='GET',
-            url=TEST_SIGNED_URL.format(i),
-            body="abcd",
-            stream=True
-        )
+def given_signed_url_responses(mocker, mocked_responses):
+    class MockResponse:
+        def __init__(self, data, status_code):
+            self.content = data
+            self.status_code = status_code
 
-
-def given_signed_url_responses_for_templates(message_count):
-    for i in range(message_count):
-        responses.add(
-            method="GET",
-            url=TEST_SIGNED_URL.format(i),
-            body=TEST_TEMPLATE,
-            stream=True
-        )
-
-
-def given_error_response_for_url(url):
-    responses.add(
-        method="GET",
-        url=url,
-        body="Error: Access Denied.",
-        status=404
-    )
+    mocked_response = mocker.Mock()
+    mocked_response.read.side_effect = mocked_responses
+    mocked_response_objects = [MockResponse(mocked_response[0], mocked_response[1]) for mocked_response in
+                               mocked_responses]
+    requests.get.side_effect = mocked_response_objects
 
 
 def given_bucket(mocker, env_variable="ARTIFACTS_BUCKET", bucket_name=TEST_CONSUMER_BUCKET_NAME):
@@ -261,6 +235,6 @@ def assert_files_in_bucket(object_count):
 def assert_template_has_content(object_key, expected_template, bucket_name):
     s3 = boto3.resource('s3')
     saved_template_stream = s3.Object(key=object_key, bucket_name=bucket_name).get()['Body'].read()
-    saved_template = saved_template_stream.decode("utf-8")
+    saved_template = saved_template_stream
 
     assert expected_template == saved_template
