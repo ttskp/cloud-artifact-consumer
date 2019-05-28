@@ -117,7 +117,7 @@ Resources:
       Timeout: 300
       MemorySize: 512
       Role: !GetAtt CopyRole.Arn
-      Handler: function.handler
+      Handler: index.handler
       Runtime: python3.6
       Environment:
         Variables:
@@ -286,7 +286,7 @@ Resources:
                   DurationSeconds=900)
               return sts_response["Credentials"]
 
-      Handler: function.handler
+      Handler: index.handler
       Timeout: 3
       Role: !GetAtt InitialSetTriggerRole.Arn
       Runtime: python3.6
