@@ -87,9 +87,34 @@ consumer stack is set up must be enlisted as a *trusted account* on the distribu
 
 ## Usage
 
-**TODO**
+The template is built as a pure Cloudformation template, without referencing other resources.
+Because of this, it is possible to deploy a stack based on the template directly, without having
+packaged or zipped Lambda Code.
 
-* Configuration of paramters
+### Parameters
+
+The following parameters must be configured:\
+
+* `DistributionTopic`:\
+   The distributor topic announcing new files to copy.\
+   *Default*: "arn:aws:sns:eu-west-1:529985782713:build-artifact-distributor-DistributionTopic-1A5L07HYRFVRA"
+* `DistributionRegion`:\
+   The region where the distributor stack is located.\
+   *Default*: "eu-west-1"
+* `DistributionBucket`:\
+   The source bucket of the distribution.\
+   *Default*: tts-cloud-artifacts-529985782713-eu-west-1
+* `InitialDistributionRole`:\
+   The role in the distributor stack account to assume for triggering the initset distribution.\
+   *Default*: "arn:aws:iam::529985782713:role/TriggerInitSetRole"
+* `InitialDistributionSetMachine`:\
+   The state machine to trigger for distributing the initset.\
+   *Default*: "arn:aws:states:eu-west-1:529985782713:stateMachine:InitSetRetrieverMachine-i1BYUlZbD1Si"
+
+Essentially, a distributor stack has to selected to use for the consumer stack. From this distributor
+stack, all above parameter values must be copied.
+
+After deployment, the initial set will be transferred to the consumer bucket which is then ready to use.
 
 ## Testing
 
