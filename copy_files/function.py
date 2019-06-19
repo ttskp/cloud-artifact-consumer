@@ -46,8 +46,8 @@ def replace_bucket_name_in_template(file_data):
     target_bucket = os.environ["ARTIFACTS_BUCKET"]
     distributor_bucket = os.environ["DISTRIBUTOR_BUCKET"]
     return file_data \
-        .replace(b"%b" % distributor_bucket.encode(),
-                 b"%b" % target_bucket.encode()) \
+        .replace(b"S3Bucket: %b" % distributor_bucket.encode(),
+                 b"S3Bucket: %b" % target_bucket.encode()) \
         .replace(b"s3://%b" % distributor_bucket.encode(),
                  b"s3://%b" % target_bucket.encode()) \
         .replace(b"https://%b" % distributor_bucket.encode(),
