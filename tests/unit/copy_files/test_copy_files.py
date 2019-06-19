@@ -171,7 +171,7 @@ def test_transform_template_before_upload(mocker, template_object_event):
 
         assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
         assert_template_has_content("packaged.yml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
-        assert_template_has_content("packaged.yaml", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+        assert_template_has_content("packaged.json", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
 
 
 @pytest.fixture
@@ -206,7 +206,7 @@ def template_object_event():
             },
             {
                 "body": json.dumps({
-                    "ArtifactKey": "packaged.yaml",
+                    "ArtifactKey": "packaged.json",
                     "ArtifactUrl": TEST_SIGNED_URL.format(2)
                 })
             }
