@@ -60,7 +60,25 @@ Resources:
         - CopyRole
         - Arn
       Runtime: python3.6
-    Type: AWS::Serverless::Function"""
+    Type: AWS::Serverless::Function
+  ThirdFunction:
+    Properties:
+      Code: 
+        S3Bucket: dist-bucket
+        S3Key: someFunction
+      Environment:
+        Variables:
+          BUCKET:
+            Ref: SomeBucket
+      Handler: function.handler
+      Role:
+        Fn::GetAtt:
+        - CopyRole
+        - Arn
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+"""
+
 
 TRANSFORMED_TEST_TEMPLATE = b"""AWSTemplateFormatVersion: '2010-09-09'
 Description: Test Template.
@@ -107,7 +125,24 @@ Resources:
         - CopyRole
         - Arn
       Runtime: python3.6
-    Type: AWS::Serverless::Function"""
+    Type: AWS::Serverless::Function
+  ThirdFunction:
+    Properties:
+      Code: 
+        S3Bucket: test-bucket
+        S3Key: someFunction
+      Environment:
+        Variables:
+          BUCKET:
+            Ref: SomeBucket
+      Handler: function.handler
+      Role:
+        Fn::GetAtt:
+        - CopyRole
+        - Arn
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+"""
 
 
 @mock_s3
@@ -236,5 +271,8 @@ def assert_template_has_content(object_key, expected_template, bucket_name):
     s3 = boto3.resource('s3')
     saved_template_stream = s3.Object(key=object_key, bucket_name=bucket_name).get()['Body'].read()
     saved_template = saved_template_stream
+
+    print(f"Expected: {expected_template}")
+    print(f"Actual: {saved_template}")
 
     assert expected_template == saved_template
