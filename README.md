@@ -1,7 +1,7 @@
 # Build Artifact Consumer
 
-This is a [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) project 
-providing a stack which subscribes do a artifact distribution stack.
+This is a Cloudformation project 
+providing a stack which subscribes do an artifact distribution stack.
 
 ## Requirements
 
@@ -24,15 +24,21 @@ To create an environment for the project, run
 pipenv install -d
 ```
 which will create a virtual Python environment for your project, as well as a `Pipfile.lock` file, which
-shoudl be versioned.
+should be versioned.
 To create the environment in the project directory, create a *.venv* directory before executing the command
 (As another possibility, set the `PIPENV_VENV_IN_PROJECT=true` environment variable).
 
 In IntelliJ, set the Project SDK home path to `.venv/Scripts/python.exe`, to use the created environment.
 
-### Building the project
+### Create a Bamboo Build Plan
 
-To build the project, simply run
+To create a Bamboo Build Plan for this project, take the plan specification from
+`specs/bamboo-plan-template.yaml` along with the placeholders and execute the *Bamboo Specs Builder*
+with these files.
+
+### Building the project with SAM
+
+To build the project using AWS SAM, simply run
 ```bash
 sam build
 ```
@@ -40,7 +46,22 @@ which will create a `.aws-sam` directory containing the generated files.
 
 ## Packaging and deployment
 
-To deploy the generated stack template to an *s3* bucket, run
+To deploy the template as it is, run
+
+```bash
+aws cloudformation package \
+    --template-file template.yaml \
+    --s3-bucket ${TEMPLATES_BUCKET} \
+    --s3-prefix ${TEMPLATES_PREFIX} \
+    --output json > ${OUTPUT_TEMPLATE_NAME}    
+```
+
+The reason why this project has the Lambda code defined inside the template
+is, that in this way it is possible to deploy the stack via StackSets without having 
+the Lambda code available in the target region or account.
+
+### Using SAM
+To deploy the generated stack template to an *s3* bucket using SAM, run
 
 ```bash
 sam package \
@@ -49,6 +70,10 @@ sam package \
     --s3-bucket ${TEMPLATES_BUCKET} \
     --s3-prefix ${TEMPLATES_PREFIX}
 ```
+
+which will also put the referenced Lambda code to the provided S3 bucket and
+create references instead of the code inside the template.
+
 
 ### AWS Toolkit Plugin
 
