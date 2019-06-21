@@ -38,7 +38,7 @@ Resources:
 
   ArtifactsBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete
     Properties:
       BucketName: !Sub "tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}"
 
