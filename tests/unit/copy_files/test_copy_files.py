@@ -238,8 +238,6 @@ def given_signed_url_responses(mocker, mocked_responses):
             self.content = data
             self.status_code = status_code
 
-    mocked_response = mocker.Mock()
-    mocked_response.read.side_effect = mocked_responses
     mocked_response_objects = [MockResponse(mocked_response[0], mocked_response[1]) for mocked_response in
                                mocked_responses]
     requests.get.side_effect = mocked_response_objects
