@@ -326,7 +326,7 @@ Resources:
     Type: Custom::CleanBucket
     Properties:
       ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
-        BucketName: !Sub "tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}"
+        BucketName: !Ref ArtifactsBucket
     DependsOn: ArtifactsBucket
 
   CleanBucketFunction:
