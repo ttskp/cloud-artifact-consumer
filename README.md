@@ -135,11 +135,24 @@ The following parameters must be configured:\
 * `InitialDistributionSetMachine`:\
    The state machine to trigger for distributing the initset.\
    *Default*: "arn:aws:states:eu-west-1:529985782713:stateMachine:InitSetRetrieverMachine-i1BYUlZbD1Si"
+* `TargetBucket`:\
+   Name of an existing bucket in the target account to specify as the bucket to copy the artifacts to.
+   If the parameter is left empty, a new bucket with the name tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}
+   is created and used as the target bucket.\
+   *Default*: "!NO_VALUE" (This is a workaround du to a problematic behaviour of the boto3 library with empty parameter values.)
 
 Essentially, a distributor stack has to selected to use for the consumer stack. From this distributor
 stack, all above parameter values must be copied.
 
 After deployment, the initial set will be transferred to the consumer bucket which is then ready to use.
+
+### Stack Deletion
+
+When a Artifact Consumer stack is deleted, the bucket and its objects are retained.
+This leads to a conflict, if the stack should be created again in the same region at a later point.
+To resolve this, configure the `TargetBucket` parameter value to match the name of the existing bucket,
+in the default case, this is *tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}*, where
+${AWS::AccountId} and ${AWS::Region} must be replaced with the respective values of the target account and region.
 
 ## Testing
 

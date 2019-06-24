@@ -31,7 +31,7 @@ Parameters:
 
   TargetBucket:
     Type: String
-    Default: ""
+    Default: "!NO_VALUE"
     Description: |
       Name of an existing bucket in the target account to specify as the bucket to copy the artifacts to.
       If the parameter is left empty, a new bucket with the name tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}
@@ -43,7 +43,7 @@ Parameters:
     Description: Use a different value during stack update to trigger copying the initial set.
 
 Conditions:
-  CreateNewBucket: !Equals [ !Ref TargetBucket, "" ]
+  CreateNewBucket: !Or [!Equals [ !Ref TargetBucket, "" ], !Equals [ !Ref TargetBucket, "!NO_VALUE" ]]
 
 Resources:
 
