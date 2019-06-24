@@ -322,12 +322,12 @@ Resources:
               Action: sts:AssumeRole
               Resource: arn:aws:iam::529985782713:role/TriggerInitSetRole
 
-#  CleanBucketOnDeletion:
-#    Type: Custom::CleanBucket
-#    Properties:
-#      ServiceToken: !GetAtt CleanBucketFunction.Arn
-#      BucketName: !Ref ArtifactsBucket
-#    DependsOn: ArtifactsBucket
+  CleanBucketOnDeletion:
+    Type: Custom::CleanBucket
+    Properties:
+      ServiceToken: !GetAtt CleanBucketFunction.Arn
+      BucketName: !Ref ArtifactsBucket
+    DependsOn: ArtifactsBucket
 
   CleanBucketFunction:
     Type: AWS::Lambda::Function
