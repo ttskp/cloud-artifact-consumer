@@ -378,17 +378,9 @@ Resources:
           def handler(event, context):
               helper(event, context)
       Handler: index.handler
-      Timeout: 3
+      Timeout: 30
       Role: !GetAtt InitialSetTriggerRole.Arn
       Runtime: python3.6
-      Environment:
-        Variables:
-          INITIAL_DISTRIBUTION_MACHINE: !Ref InitialDistributionSetMachine
-          INITIAL_DISTRIBUTION_ROLE: !Ref InitialDistributionRole
-          INITIAL_DISTRIBUTION_REGION: !Ref DistributionRegion
-          CONSUMER_ACCOUNT_ID: !Sub "${AWS::AccountId}"
-          CONSUMER_REGION: !Sub "${AWS::Region}"
-
 
   CleanBucketRole:
     Type: AWS::IAM::Role
