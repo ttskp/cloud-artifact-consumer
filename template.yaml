@@ -326,7 +326,7 @@ Resources:
     Type: Custom::CleanBucket
     Properties:
       ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
-        BucketName: !Ref ArtifactsBucket
+      BucketName: !Ref ArtifactsBucket
     DependsOn: ArtifactsBucket
 
   CleanBucketFunction:
