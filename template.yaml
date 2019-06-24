@@ -29,16 +29,28 @@ Parameters:
     Description: State machine to trigger for distributing the initset.
     Default: "arn:aws:states:eu-west-1:529985782713:stateMachine:InitSetRetrieverMachine-i1BYUlZbD1Si"
 
-  Version:
+  TargetBucket:
+    Type: String
+    Default: ""
+    Description: |
+      Name of an existing bucket in the target account to specify as the bucket to copy the artifacts to.
+      If the parameter is left empty, a new bucket with the name tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}
+      is created and used as the target bucket.
+
+  TriggerVersion:
     Type: String
     Default: 1.0
     Description: Use a different value during stack update to trigger copying the initial set.
+
+Conditions:
+  CreateNewBucket: !Equals [ !Ref TargetBucket, "" ]
 
 Resources:
 
   ArtifactsBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
+    Condition: CreateNewBucket
+    DeletionPolicy: Retain
     Properties:
       BucketName: !Sub "tts-cloud-artifacts-${AWS::AccountId}-${AWS::Region}"
 
@@ -124,7 +136,7 @@ Resources:
       Runtime: python3.6
       Environment:
         Variables:
-          ARTIFACTS_BUCKET: !Ref ArtifactsBucket
+          ARTIFACTS_BUCKET: !If [CreateNewBucket, !Ref ArtifactsBucket, !Ref TargetBucket]
           DISTRIBUTOR_BUCKET: !Ref DistributionBucket
 
   CopyRole:
@@ -168,7 +180,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !Sub "${ArtifactsBucket.Arn}/*"
+                Resource: !If [CreateNewBucket, !Sub "${ArtifactsBucket.Arn}/*", !Sub "arn:aws:s3:::TargetBucket"]
 
   QueueToCopyFunctionMapping:
     Type: AWS::Lambda::EventSourceMapping
@@ -179,7 +191,6 @@ Resources:
 
   Queue:
     Type: AWS::SQS::Queue
-    DependsOn: ArtifactsBucket
     Properties:
       VisibilityTimeout: 300
 
@@ -216,7 +227,7 @@ Resources:
     Type: Custom::InitialSetTrigger
     Properties:
       ServiceToken: !GetAtt InitialSetTriggerFunction.Arn
-      Version: !Ref Version
+      Version: !Ref TriggerVersion
     DependsOn: Queue
 
   InitialSetTriggerFunction:
@@ -321,85 +332,3 @@ Resources:
               Effect: Allow
               Action: sts:AssumeRole
               Resource: arn:aws:iam::529985782713:role/TriggerInitSetRole
-
-  CleanBucketOnDeletion:
-    Type: Custom::CleanBucket
-    Properties:
-      ServiceToken: !GetAtt CleanBucketFunction.Arn
-      BucketName: !Ref ArtifactsBucket
-    DependsOn: ArtifactsBucket
-
-  CleanBucketFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Code:
-        ZipFile: !Sub |
-          import boto3
-          from crhelper import CfnResource
-
-          BUCKET_NAME_KEY = "BucketName"
-
-          helper = CfnResource()
-
-
-          def get_s3_resource():
-              if "s3_resource" not in locals():
-                  locals()["s3_resource"] = boto3.resource("s3")
-              return locals()["s3_resource"]
-
-
-          @helper.create
-          def create(event, context):
-              print("Artifact Bucket Cleaner created successfully.")
-              return None
-
-
-          @helper.update
-          def update(event, context):
-              pass
-
-
-          @helper.delete
-          def delete(event, context):
-              bucket_name = get_bucket_name(event)
-              print(f"Delete contents from Bucket {bucket_name}")
-              s3 = get_s3_resource()
-              bucket = s3.Bucket(bucket_name)
-              bucket.objects.all().delete()
-
-
-          def get_bucket_name(event):
-              properties = event["ResourceProperties"]
-              if BUCKET_NAME_KEY not in properties:
-                  raise ValueError("BucketName must be defined in the resource properties.")
-              return properties[BUCKET_NAME_KEY]
-
-
-          def handler(event, context):
-              helper(event, context)
-      Handler: index.handler
-      Timeout: 30
-      Role: !GetAtt InitialSetTriggerRole.Arn
-      Runtime: python3.6
-
-  CleanBucketRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: sts:AssumeRole
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: Invoke-Init-Set-Distribution
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              Effect: Allow
-              Action: s3:DeleteObject
-              Resource: !Sub "${ArtifactsBucket.Arn}/*"
