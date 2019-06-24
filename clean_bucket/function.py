@@ -14,13 +14,16 @@ def get_s3_resource():
 
 @helper.create
 def create(event, context):
-    print("Artifact Bucket Cleaner created successfully.")
+    bucket_name = get_bucket_name(event)
+    print(f"Artifact Bucket Cleaner created successfully for bucket '{bucket_name}'.")
     return None
 
 
 @helper.update
 def update(event, context):
-    pass
+    bucket_name = get_bucket_name(event)
+    print(f"Artifact Bucket Cleaner updated successfully for bucket '{bucket_name}'.")
+    return None
 
 
 @helper.delete
@@ -30,6 +33,7 @@ def delete(event, context):
     s3 = get_s3_resource()
     bucket = s3.Bucket(bucket_name)
     bucket.objects.all().delete()
+    print(f"Bucket cleaned successfully.")
 
 
 def get_bucket_name(event):
