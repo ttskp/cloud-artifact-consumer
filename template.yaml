@@ -180,7 +180,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !If [CreateNewBucket, !Sub "${ArtifactsBucket.Arn}/*", !Sub "arn:aws:s3:::TargetBucket"]
+                Resource: !If [CreateNewBucket, !Sub "${ArtifactsBucket.Arn}/*", !Sub "arn:aws:s3:::${TargetBucket}"]
 
   QueueToCopyFunctionMapping:
     Type: AWS::Lambda::EventSourceMapping
