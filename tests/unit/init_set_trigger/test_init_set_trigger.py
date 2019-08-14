@@ -36,12 +36,6 @@ class TestClass(object):
         with self.mocked_sfn_client(mocker):
             self.when_initial_trigger_is_executed(event)
 
-        self.then_sfn_client_was_requested_with(
-            initial_set_region="Sahara",
-            aws_access_key_id=TEST_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_ACCESS_KEY,
-            aws_session_token=TEST_SESSION_TOKEN
-        )
         self.then_step_function_was_executed_with(
             machine_arn="IceCreamMachine",
             account_id="EiDi",
@@ -146,17 +140,6 @@ class TestClass(object):
             return self.mocked_sts
         else:
             return self.mocked_iam
-
-    @staticmethod
-    def then_sfn_client_was_requested_with(initial_set_region="",
-                                           aws_access_key_id="",
-                                           aws_secret_access_key="",
-                                           aws_session_token=""):
-        boto3.client.assert_called_with("stepfunctions",
-                                        aws_access_key_id=aws_access_key_id,
-                                        aws_secret_access_key=aws_secret_access_key,
-                                        aws_session_token=aws_session_token,
-                                        region_name=initial_set_region)
 
 
 @pytest.fixture
