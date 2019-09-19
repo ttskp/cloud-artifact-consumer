@@ -1,5 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
+# Version: #{stage}-#{buildNumber}
+# Stage: #{stage}
+# Build Number: #{buildNumber}
+
 Description: Consumer side of CFN Artifact Distribution.
 
 Parameters:
