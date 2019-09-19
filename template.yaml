@@ -4,7 +4,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 # Stage: #{stage}
 # Build Number: #{buildNumber}
 
-Description: Consumer side of CFN Artifact Distribution.
+Description: "Consumer side of CFN Artifact Distribution - #{stage}-#{buildNumber}"
 
 Parameters:
 
