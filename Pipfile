@@ -16,7 +16,6 @@ tests = "python -m pytest --disable-pytest-warnings"
 cfnresponse = "*"
 boto3 = "*"
 requests = "*"
-crhelper = "*"
 
 [requires]
 python_version = "3.6"
