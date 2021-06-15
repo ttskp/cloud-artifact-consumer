@@ -1,8 +1,9 @@
 import json
 import os
+import re
 
 import boto3
-from botocore.vendored import requests
+import requests
 
 
 def handler(event, context):
@@ -45,7 +46,7 @@ def upload_file_to_bucket(file_data, s3_filename):
 def replace_bucket_name_in_template(file_data):
     target_bucket = os.environ["ARTIFACTS_BUCKET"]
     distributor_bucket = os.environ["DISTRIBUTOR_BUCKET"]
-    return file_data \
+    file_data = file_data \
         .replace(b"Bucket: %b" % distributor_bucket.encode(),
                  b"Bucket: %b" % target_bucket.encode()) \
         .replace(b"S3Bucket: %b" % distributor_bucket.encode(),
@@ -56,6 +57,11 @@ def replace_bucket_name_in_template(file_data):
                  b"https://%b" % target_bucket.encode()) \
         .replace(b"Default: %b" % distributor_bucket.encode(),
                  b"Default: %b" % target_bucket.encode())
+    file_data = re.sub(
+        b"https://s3\\.(.*?)\\.amazonaws\\.com/%b" % distributor_bucket.encode(),
+        b"https://%b.s3.amazonaws.com" % target_bucket.encode(),
+        file_data)
+    return file_data
 
 
 def is_template(file_name, file_data):

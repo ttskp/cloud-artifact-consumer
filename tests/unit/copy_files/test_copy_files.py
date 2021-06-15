@@ -4,7 +4,7 @@ import os
 import boto3
 import pytest
 import responses
-from botocore.vendored import requests
+import requests
 from moto import mock_s3
 
 from copy_files import function
@@ -77,6 +77,10 @@ Resources:
         - Arn
       Runtime: python3.6
     Type: AWS::Serverless::Function
+  NestedStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateUrl: https://s3.eu-west-1.amazonaws.com/dist-bucket/test.yaml
 """
 
 
@@ -142,36 +146,40 @@ Resources:
         - Arn
       Runtime: python3.6
     Type: AWS::Serverless::Function
+  NestedStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateUrl: https://test-bucket.s3.amazonaws.com/test.yaml
 """
 
 
 @mock_s3
 def test_copy_files_to_s3(mocker, event_builder):
-    with mocker.patch('botocore.vendored.requests.get'):
-        message_count = 3
+    mocker.patch('requests.get')
+    message_count = 3
 
-        event = event_builder(message_count)
-        given_signed_url_responses(mocker, [(b'ABCD', 200), (b'ACDC', 200), (b'', 403)])
-        given_bucket(mocker)
+    event = event_builder(message_count)
+    given_signed_url_responses(mocker, [(b'ABCD', 200), (b'ACDC', 200), (b'', 403)])
+    given_bucket(mocker)
 
-        function.handler(event, None)
+    function.handler(event, None)
 
-        assert_files_in_bucket(2)
+    assert_files_in_bucket(2)
 
 
 @mock_s3
 @responses.activate
 def test_transform_template_before_upload(mocker, template_object_event):
-    with mocker.patch('botocore.vendored.requests.get'):
-        given_bucket(mocker)
-        given_bucket(mocker, env_variable="DISTRIBUTOR_BUCKET", bucket_name="dist-bucket")
+    mocker.patch('requests.get')
+    given_bucket(mocker)
+    given_bucket(mocker, env_variable="DISTRIBUTOR_BUCKET", bucket_name="dist-bucket")
 
-        given_signed_url_responses(mocker, [(TEST_TEMPLATE, 200), (TEST_TEMPLATE, 200), (TEST_TEMPLATE, 200)])
-        function.handler(template_object_event, None)
+    given_signed_url_responses(mocker, [(TEST_TEMPLATE, 200), (TEST_TEMPLATE, 200), (TEST_TEMPLATE, 200)])
+    function.handler(template_object_event, None)
 
-        assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
-        assert_template_has_content("packaged.yml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
-        assert_template_has_content("packaged.json", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+    assert_template_has_content("packaged.yaml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+    assert_template_has_content("packaged.yml", TRANSFORMED_TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
+    assert_template_has_content("packaged.json", TEST_TEMPLATE, TEST_CONSUMER_BUCKET_NAME)
 
 
 @pytest.fixture
@@ -247,7 +255,8 @@ def given_bucket(mocker, env_variable="ARTIFACTS_BUCKET", bucket_name=TEST_CONSU
     mocker.patch.dict(os.environ, {env_variable: bucket_name})
 
     mocked_client = boto3.client('s3')
-    mocked_client.create_bucket(Bucket=TEST_CONSUMER_BUCKET_NAME)
+    mocked_client.create_bucket(Bucket=bucket_name,
+                                CreateBucketConfiguration={"LocationConstraint": "eu-west-1"})
 
 
 def given_distributor_bucket(mocker, bucket_name):
@@ -273,4 +282,4 @@ def assert_template_has_content(object_key, expected_template, bucket_name):
     print(f"Expected: {expected_template}")
     print(f"Actual: {saved_template}")
 
-    assert expected_template == saved_template
+    assert saved_template == expected_template
