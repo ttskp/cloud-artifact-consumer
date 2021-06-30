@@ -70,11 +70,11 @@ def replace_bucket_name_in_template(file_data):
 
 
 def is_template(file_name, file_data):
-    return is_yaml_file(file_name) and has_template_header(file_data)
+    return has_template_file_type(file_name) and has_template_header(file_data)
 
 
-def is_yaml_file(file_name):
-    return file_name.endswith(".yaml") or file_name.endswith(".yml")
+def has_template_file_type(file_name):
+    return any(file_name.endswith(file_type) for file_type in [".yaml", ".yml", ".template"])
 
 
 def has_template_header(file_data):
