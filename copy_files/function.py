@@ -48,8 +48,10 @@ def download_file_data(presigned_url):
     print("Response read")
 
     print("Writing response to stream...")
+    CHUNK_SIZE = 16 * 1024
     requested_object_as_stream = b""
-    while chunk := response.read(200):
+
+    while chunk := response.read(CHUNK_SIZE):
         requested_object_as_stream += chunk
 
     print("Resonse written to stream")
