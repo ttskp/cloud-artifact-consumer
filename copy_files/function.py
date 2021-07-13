@@ -17,11 +17,15 @@ def handler(event, context):
 
         file_name = body["ArtifactKey"]
         try:
+            print("Downloading file...")
             file_data = download_file_data(presigned_url)
+            print("File downloaded")
 
             if is_template(file_name, file_data):
+                print("File is template - replace bucket")
                 file_data = replace_bucket_name_in_template(file_data)
 
+            print("Starting file upload...")
             upload_file_to_bucket(file_data, file_name)
         except IOError as e:
             # TODO: Should this be connected to an alarm or a topic?
@@ -31,14 +35,24 @@ def handler(event, context):
 
 def download_file_data(presigned_url):
     parsed_url = urlparse(presigned_url)
-    connection = http.client.HTTPSConnection(host=parsed_url.hostname, port=parsed_url.port)
-    connection.request("GET", f"{parsed_url.path}?{parsed_url.query}")
-    response = connection.getresponse()
 
+    print("Establishing http connectio...")
+    connection = http.client.HTTPSConnection(host=parsed_url.hostname, port=parsed_url.port)
+
+    print(f"Sending request: '{parsed_url.path}?{parsed_url.query}' ...")
+    connection.request("GET", f"{parsed_url.path}?{parsed_url.query}")
+    print("Request sent")
+
+    print("Reading response...")
+    response = connection.getresponse()
+    print("Response read")
+
+    print("Writing response to stream...")
     requested_object_as_stream = b""
     while chunk := response.read(200):
         requested_object_as_stream += chunk
 
+    print("Resonse written to stream")
     return requested_object_as_stream
 
 
