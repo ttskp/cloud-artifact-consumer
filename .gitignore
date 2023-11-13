@@ -29,6 +29,8 @@ jspm_packages/
 *.tgz
 .yarn-integrity
 .cache
+cdk.context.json
+.pytest_cache/
 !/.projenrc.js
 /test-reports/
 junit.xml

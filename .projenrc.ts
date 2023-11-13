@@ -8,6 +8,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   name: 'cloud-build-artifact-consumer',
   projenrcTs: true,
 
+  gitignore: ['cdk.context.json', '.pytest_cache/'],
   deps: [
     '@tts-cdk/build-pipelines',
     `@aws-cdk/aws-lambda-python-alpha@${cdkVersion}-alpha.0`,
