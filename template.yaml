@@ -320,7 +320,7 @@ Resources:
       Handler: index.handler
       Timeout: 3
       Role: !GetAtt InitialSetTriggerRole.Arn
-      Runtime: python3.6
+      Runtime: python3.8
       Environment:
         Variables:
           INITIAL_DISTRIBUTION_MACHINE: !Ref InitialDistributionSetMachine
